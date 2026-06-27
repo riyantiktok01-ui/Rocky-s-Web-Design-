@@ -1,17 +1,30 @@
+import os
 from fastapi import FastAPI, Depends, HTTPException, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
-import database, auth, schemas, invoice_pdf
+import database, auth, schemas, invoice_pdf, seed
 from datetime import datetime, timedelta
 import io
 
+# Seed admin user on startup
+seed.seed()
+
 app = FastAPI(title="Rocky's Web Design Agency Manager")
+
+# CORS — allow local dev + production frontend URLs
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+origins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3000",
+    FRONTEND_URL,
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -371,4 +384,5 @@ def get_agent_performance(db: Session = Depends(database.get_db), current_user: 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run(app, host="0.0.0.0", port=port)
